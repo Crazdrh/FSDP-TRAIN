@@ -6,33 +6,20 @@ This repository contains a fully‑offline pipeline for preparing text data, dow
 
 Table of Contents
 
-Project Overview
-
-Repository Layout
-
-Quick Start
-
-Prerequisites & Installation
-
-Data Preparation
-
-Model Acquisition
-
-Distributed Fine‑Tuning with fsdp1.py
-
-Checkpoint Format & Resumption
-
-Monitoring & Logging
-
-Tips & Troubleshooting
-
-Frequently Asked Questions
-
-Contributing
-
-License
-
-Acknowledgments
+1. Project Overview
+2. Repository Layout
+3. Quick Start
+4. Prerequisites & Installation
+5. Data Preparation
+6. Model Acquisition
+7. Distributed Fine‑Tuning with fsdp1.py
+8. Checkpoint Format & Resumption
+9. Monitoring & Logging
+10. Tips & Troubleshooting
+11. Frequently Asked Questions
+12. Contributing
+13. License
+14. Acknowledgments
 
 Project Overview
 
@@ -42,35 +29,35 @@ This repository provides:
 
 Script
 
-Purpose
-
-Key Technologies
-
-ORGANIZE_DATA.py fileciteturn0file3
-
-Evenly shuffles raw files into split_* sub‑folders for parallel preprocessing
-
-shutil, Python I/O
-
-DATA-HF.py fileciteturn0file0
-
-Converts TXT/JSON/YAML/… files into a Hugging Face Dataset and saves Arrow shards for streaming
-
-datasets, optional PyYAML
-
-MODEL_DOWNLOAD.py fileciteturn0file2
-
-Offline download of model config, tokenizer and weights to $HF_HOME
-
-transformers, torch.device("meta")
-
-fsdp1.py fileciteturn0file1
-
-Multi‑GPU fine‑tuning loop with FSDP, checkpointing, resume support and detailed telemetry
-
-PyTorch 2.3 FSDP, torchrun, transformers
-
-While all helper scripts are covered, the remainder of this README deep‑dives into fsdp1.py—the heart of the training pipeline.
+        Purpose
+        
+        Key Technologies
+        
+        ORGANIZE_DATA.py fileciteturn0file3
+        
+        Evenly shuffles raw files into split_* sub‑folders for parallel preprocessing
+        
+        shutil, Python I/O
+        
+        DATA-HF.py fileciteturn0file0
+        
+        Converts TXT/JSON/YAML/… files into a Hugging Face Dataset and saves Arrow shards for streaming
+        
+        datasets, optional PyYAML
+        
+        MODEL_DOWNLOAD.py fileciteturn0file2
+        
+        Offline download of model config, tokenizer and weights to $HF_HOME
+        
+        transformers, torch.device("meta")
+        
+        fsdp1.py fileciteturn0file1
+        
+        Multi‑GPU fine‑tuning loop with FSDP, checkpointing, resume support and detailed telemetry
+        
+        PyTorch 2.3 FSDP, torchrun, transformers
+        
+        While all helper scripts are covered, the remainder of this README deep‑dives into fsdp1.py—the heart of the training pipeline.
 
 Repository Layout
 
