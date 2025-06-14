@@ -5,18 +5,14 @@ This repository contains a fully‑offline pipeline for preparing text data, dow
 Table of Contents:
 1. Project Overview
 2. Repository Layout
-3. Quick Start
-4. Prerequisites & Installation
-5. Data Preparation
-6. Model Acquisition
-7. Distributed Fine‑Tuning with fsdp1.py
-8. Checkpoint Format & Resumption
-9. Monitoring & Logging
-10. Tips & Troubleshooting
-11. Frequently Asked Questions
-12. Contributing
-13. License
-14. Acknowledgments
+3. Prerequisites & Installation
+4. Data Preparation
+5. Model Acquisition
+6. Distributed Fine‑Tuning with fsdp1.py
+7. Checkpoint Format & Resumption
+8. Monitoring & Logging
+9. License
+10. Acknowledgments
 
 Project Overview
 Large‑language‑model (LLM) training is memory‑intensive. Fully Sharded Data Parallel (FSDP) breaks model parameters, gradients, and optimizer states into non‑overlapping shards that are distributed evenly across GPUs, reducing the per‑GPU memory footprint to roughly 1 ⁄ N of ZeRO‑1 and enabling full‑precision fine‑tuning on commodity hardware. 
@@ -76,7 +72,7 @@ Data Preparation:
             $ python DATA-HF.py \
                 --data_folder ./splits \
                 --save_dir hf_datasets/my_corpus
-The resulting Arrow shards can be consumed locally; no internet API calls are required.
+    The resulting Arrow shards can be consumed locally; no internet API calls are required.
 
 
 Model Acquisition:
@@ -223,63 +219,14 @@ Monitoring & Logging:
     Peak GPU memory is reset after each logging event so that the next window shows worst‑case consumption for that interval.
     For more granular insights you can attach NVIDIA Nsight or nvidia-smi dmon because parameter sharding reduces resident memory to peaks of context length × hidden size.
 
-Tips & Troubleshooting
 
-Symptom
+License:
+    
+    This project is licensed under the MIT License.
 
-Possible Cause
+Acknowledgments:
 
-Fix
-
-CUDA out of memory at first forward
-
---batch-size too high, seq-length > model limit
-
-Lower batch or enable --cpu-offload on
-
-Hang after INFO Creating experiment root directory
-
-Shared file‑system latency
-
-Use node‑local SSD or set $TORCH_DISTRIBUTED_DEBUG=INFO
-
-Validation required when using private HF model
-
-Offline training; token not found
-
-huggingface-cli login --token … on a machine with internet, then copy .cache directory
-
-Checkpoint size larger than expected
-
-cpu-offload off keeps FP32 optimizer states on GPU, doubling shard
-
-Turn on CPU offload or switch to 8‑bit Adam
-
-Frequently Asked Questions
-
-Contributing
-
-Fork the repo & create your feature branch (git checkout -b feature/foo)
-
-Commit your changes (git commit -am 'Add awesome feature')
-
-Push to the branch (git push origin feature/foo)
-
-Open a Pull Request ✨
-
-All contributions must pass flake8 and black (120‑char lines) as well as the minimal smoke test:
-
-pytest tests/test_smoke.py
-
-License
-
-This project is licensed under the MIT License.
-
-Acknowledgments
-
-PyTorch FSDP team for upstream examples
-
-Hugging Face transformers & datasets
-
-The original Meta Llama‑3 authors
+    PyTorch FSDP team for upstream examples
+    Hugging Face transformers & datasets
+    The original Meta Llama‑3 authors
 
