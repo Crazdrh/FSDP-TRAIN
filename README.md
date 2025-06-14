@@ -190,38 +190,38 @@ Internal Flow:
 
     7. Checkpointing & Resume
 
-Sharded state is saved via torch.distributed.checkpoint.save()—each rank writes its shard locally, so no single machine aggregates > GPU RAM.
+        Sharded state is saved via torch.distributed.checkpoint.save()—each rank writes its shard locally, so no single machine aggregates > GPU RAM.
+        An auxiliary state.json (epoch, global_step, etc.) and lr_scheduler.pt are stored by rank 0 only.
+        Upon startup, if these files exist they are loaded with torch.distributed.checkpoint.load() and training resumes seamlessly.
 
-An auxiliary state.json (epoch, global_step, etc.) and lr_scheduler.pt are stored by rank 0 only.
+    8. Memory Telemetry
+        get_mem_stats() exposes current and peak allocation & reservation per process, printed in the log for quick diagnostics.
 
-Upon startup, if these files exist they are loaded with torch.distributed.checkpoint.load() and training resumes seamlessly.
 
-Memory Telemetryget_mem_stats() exposes current and peak allocation & reservation per process, printed in the log for quick diagnostics.
+Example Log Snippet:
+    
+    [rank=0] total_mem_in_gb:40   curr_alloc:1.9   peak_alloc:14.9
+    [rank=0] {'global_step': 150, 'running_loss': 1.72, 'tok/s': 6404,
+              'time/data': 7.9, 'time/forward': 34.1, 'time/backward': 55.4,
+              'time/update': 12.2, 'time/total': 109.6}
 
-Example Log Snippet
+Checkpoint Format & Resumption:
 
-[rank=0] total_mem_in_gb:40   curr_alloc:1.9   peak_alloc:14.9
-[rank=0] {'global_step': 150, 'running_loss': 1.72, 'tok/s': 6404,
-          'time/data': 7.9, 'time/forward': 34.1, 'time/backward': 55.4,
-          'time/update': 12.2, 'time/total': 109.6}
-
-Checkpoint Format & Resumption
-
-outputs/
-└── llama3-finetune/
-    ├── checkpoint/            # per‑rank shard files (~1/GPUs of full model)
-    ├── lr_scheduler.pt        # Pickled LR scheduler state
-    └── state.json             # Epoch / step counters for auto‑resume
+    outputs/
+    └── llama3-finetune/
+        ├── checkpoint/            # per‑rank shard files (~1/GPUs of full model)
+        ├── lr_scheduler.pt        # Pickled LR scheduler state
+        └── state.json             # Epoch / step counters for auto‑resume
 
 To resume: rerun the exact same torchrun command; the script discovers the directory and loads the shards. You may safely increase --num-epochs or change --log-freq / --ckpt-freq between runs—these are not stored in state.json.
 
-Monitoring & Logging
 
-Stdout/Stderr are timestamped and include the global rank.
 
-Peak GPU memory is reset after each logging event so that the next window shows worst‑case consumption for that interval.
+Monitoring & Logging:
 
-For more granular insights you can attach NVIDIA Nsight or nvidia-smi dmon because parameter sharding reduces resident memory to peaks of context length × hidden size.
+    Stdout/Stderr are timestamped and include the global rank.
+    Peak GPU memory is reset after each logging event so that the next window shows worst‑case consumption for that interval.
+    For more granular insights you can attach NVIDIA Nsight or nvidia-smi dmon because parameter sharding reduces resident memory to peaks of context length × hidden size.
 
 Tips & Troubleshooting
 
