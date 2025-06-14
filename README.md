@@ -25,40 +25,6 @@ Project Overview
 
 Large‑language‑model (LLM) training is memory‑intensive. Fully Sharded Data Parallel (FSDP) breaks model parameters, gradients and optimizer states into non‑overlapping shards that are distributed across GPUs, reducing the per‑GPU memory footprint to roughly 1 ⁄ N of ZeRO‑1 and enabling full‑precision fine‑tuning on commodity hardware. 
 
-This repository provides:
-
-Script
-
-        Purpose
-        
-        Key Technologies
-        
-        ORGANIZE_DATA.py fileciteturn0file3
-        
-        Evenly shuffles raw files into split_* sub‑folders for parallel preprocessing
-        
-        shutil, Python I/O
-        
-        DATA-HF.py fileciteturn0file0
-        
-        Converts TXT/JSON/YAML/… files into a Hugging Face Dataset and saves Arrow shards for streaming
-        
-        datasets, optional PyYAML
-        
-        MODEL_DOWNLOAD.py fileciteturn0file2
-        
-        Offline download of model config, tokenizer and weights to $HF_HOME
-        
-        transformers, torch.device("meta")
-        
-        fsdp1.py fileciteturn0file1
-        
-        Multi‑GPU fine‑tuning loop with FSDP, checkpointing, resume support and detailed telemetry
-        
-        PyTorch 2.3 FSDP, torchrun, transformers
-        
-        While all helper scripts are covered, the remainder of this README deep‑dives into fsdp1.py—the heart of the training pipeline.
-
 Repository Layout
 
 ├── data/                 # optional raw text files (any structure)
