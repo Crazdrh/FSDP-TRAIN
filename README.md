@@ -130,7 +130,7 @@ Distributed Fine‑Tuning with fsdp1.py:
 
 Internal Flow:
 
-    Process Group Initialisation:
+    1. Process Group Initialisation:
     
         dist.init_process_group()
         rank = dist.get_rank(); local_rank = rank % torch.cuda.device_count()
@@ -138,11 +138,9 @@ Internal Flow:
     
     FSDP requires a DDP‑compatible process group. Using torchrun this is created automatically.
 
-Model Construction
-
-Rank 0 loads full weights on CPU so the exact parameter count is printed—every other rank spins up an empty meta model and populates weights during FSDP wrapping.
-
-LlamaRMSNorm & LlamaRotaryEmbedding miss reset_parameters(), so dummy lambdas are monkey‑patched to satisfy FSDP’s param‑init API.
+    2. Model Construction:
+        Rank 0 loads full weights on CPU so the exact parameter count is printed—every other rank spins up an empty meta model and populates weights during FSDP wrapping.
+        LlamaRMSNorm & LlamaRotaryEmbedding miss reset_parameters(), so dummy lambdas are monkey‑patched to satisfy FSDP’s param‑init API.
 
 FSDP Wrapping
 
