@@ -161,46 +161,34 @@ Internal Flow:
         sync_module_states=True ensures that the initial weights broadcast from rank 0.        
         auto_wrap_policy recursively wraps LlamaDecoderLayer & embedding tables only, minimising communication overhead.
 
-Gradient Checkpointing — Memory vs Compute trade‑off
+    4. Gradient Checkpointing — Memory vs Compute trade‑off
 
-apply_activation_checkpointing(model,
-    checkpoint_wrapper_fn=checkpoint_wrapper,
-    auto_wrap_policy=wrap_policy)
+            apply_activation_checkpointing(model,
+                checkpoint_wrapper_fn=checkpoint_wrapper,
+                auto_wrap_policy=wrap_policy)
 
-Activations of each decoder block are recomputed during the backward pass, reducing peak memory by ~30 %.
+        Activations of each decoder block are recomputed during the backward pass, reducing peak memory by ~30 %.
 
-Data Loading & Tokenisation
+    5. Data Loading & Tokenisation
 
-If dataset-name is a path, load_from_disk() is used—no internet traffic.
+        If dataset-name is a path, load_from_disk() is used—no internet traffic.
+        
+        Tokenisation + grouping happen lazily via HF map with multi‑processing equal to multiprocessing.cpu_count().
+        
+        The resulting dataset is sharded across ranks with DistributedSampler ensuring each GPU sees a unique subset each epoch.
 
-Tokenisation + grouping happen lazily via HF map with multi‑processing equal to multiprocessing.cpu_count().
+    6. Training Loop
+        The loop tracks four timers (data, forward, backward, update) capturing average milliseconds and reporting them every log_freq steps.
+        
+        data     Token transfer CPU→GPU
+        
+        forward     model(**batch)
+        
+        backward     loss.backward() (all‑reduce embedded in FSDP)
+        
+        update     optimizer.step() + LR scheduler
 
-The resulting dataset is sharded across ranks with DistributedSampler ensuring each GPU sees a unique subset each epoch.
-
-Training Loop
-The loop tracks four timers (data, forward, backward, update) capturing average milliseconds and reporting them every log_freq steps.
-
-Timer
-
-Scope
-
-data
-
-Token transfer CPU→GPU
-
-forward
-
-model(**batch)
-
-backward
-
-loss.backward() (all‑reduce embedded in FSDP)
-
-update
-
-optimizer.step() + LR scheduler
-
-Checkpointing & Resume
+    7. Checkpointing & Resume
 
 Sharded state is saved via torch.distributed.checkpoint.save()—each rank writes its shard locally, so no single machine aggregates > GPU RAM.
 
