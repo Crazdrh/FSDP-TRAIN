@@ -4,25 +4,23 @@ Run Command:  torchrun --nproc_per_node=4 fsdp1.py  --experiment-name Chnage to 
 FSDP Llama Fine‑Tuning Pipeline
 This repository contains a fully‑offline pipeline for preparing text data, downloading a base Llama model, and fine‑tuning it with PyTorch 2 Fully Sharded Data Parallel (FSDP) using a single command. The main entry‑point is fsdp1.py, which implements a ZeRO‑3–equivalent training loop with sharded checkpoints, automatic resumption, gradient checkpointing and detailed memory/timing metrics. 
 
-Table of Contents
-
-1. Project Overview
-2. Repository Layout
-3. Quick Start
-4. Prerequisites & Installation
-5. Data Preparation
-6. Model Acquisition
-7. Distributed Fine‑Tuning with fsdp1.py
-8. Checkpoint Format & Resumption
-9. Monitoring & Logging
-10. Tips & Troubleshooting
-11. Frequently Asked Questions
-12. Contributing
-13. License
-14. Acknowledgments
+Table of Contents:
+    1. Project Overview
+    2. Repository Layout
+    3. Quick Start
+    4. Prerequisites & Installation
+    5. Data Preparation
+    6. Model Acquisition
+    7. Distributed Fine‑Tuning with fsdp1.py
+    8. Checkpoint Format & Resumption
+    9. Monitoring & Logging
+    10. Tips & Troubleshooting
+    11. Frequently Asked Questions
+    12. Contributing
+    13. License
+    14. Acknowledgments
 
 Project Overview
-
 Large‑language‑model (LLM) training is memory‑intensive. Fully Sharded Data Parallel (FSDP) breaks model parameters, gradients and optimizer states into non‑overlapping shards that are distributed across GPUs, reducing the per‑GPU memory footprint to roughly 1 ⁄ N of ZeRO‑1 and enabling full‑precision fine‑tuning on commodity hardware. 
 
 Repository Layout
@@ -37,219 +35,96 @@ Repository Layout
 ├── ORGANIZE_DATA.py
 ├── DATA-HF.py
 ├── MODEL_DOWNLOAD.py
-└── README.md             # ← you are here
+└── README.md      
 
-Quick Start
+After each ckpt_freq steps a sharded checkpoint is written to outputs dir. Restarting the same torchrun command will resume automatically.
 
-# 1️⃣ Install dependencies (see below for details)
-$ conda env create -f environment.yml && conda activate llama-fsdp
-
-# 2️⃣ Prepare dataset
-$ python ORGANIZE_DATA.py --src_dir raw_txt --dst_root splits
-$ python DATA-HF.py --data_folder splits --save_dir hf_datasets/my_corpus
-
-# 3️⃣ Download base model offline
-$ python MODEL_DOWNLOAD.py  \
-    --model-name meta-llama/Llama-3.2-3B-Instruct
-
-# 4️⃣ Launch distributed fine‑tuning on 4 GPUs
-$ torchrun --nnodes 1 --nproc_per_node 4 fsdp1.py \
-    -e llama3-finetune \
-    -d hf_datasets/my_corpus \
-    -m meta-llama/Llama-3.2-3B-Instruct \
-    --save-dir outputs \
-    --batch-size 2 --lr 2e-5 --num-epochs 3 \
-    --cpu-offload on
-
-After each ckpt_freq steps a sharded checkpoint is written to outputs/llama3-finetune/. Restarting the same torchrun command will resume automatically.
-
-Prerequisites & Installation
-
-Hardware
-
-GPUs ≥ 1 with CUDA 11.8+ (BF16 recommended; FP16 also works)
-
-CPU RAM ≥ 32 GB (for data loading & tokenizer caches)
-
-SSD storage for dataset shards and checkpoints
-
-Software
-
-Package
-
-Tested Version
-
-Python
-
- 3.10 
-
- 
-
-PyTorch
-
- >= 2.3.0
-
- 
-
-CUDA Toolkit
-
- >= 11.8
-
-torchvision
-
-optional (metrics)
-
-Hugging Face transformers
-
-4.41
-
-datasets
-
-≥ 3.9
-
-tqdm, pyyaml, argparse
-
-standard
-
-Install everything via the provided environment.yml or run pip install -r requirements.txt.
+Prerequisites & Installation:
+        Hardware:
+                GPUs ≥ 1 with CUDA 11.8+ (BF16 recommended, FP16 also works, FP32 also works)
+                CPU RAM ≥ 32 GB (for data loading & tokenizer caches)
+                SSD storage for dataset shards and checkpoint shards
+        
+        Software:
+                Python => 3.10
+                PyTorch >= 2.3.0
+                CUDA Toolkit >= 11.8
+                torchvision = optional (metrics)
+                Hugging Face transformers = latest
+                datasets = latest
+                tqdm, pyyaml, argparse
 
 Data Preparation
 
-1. Organize raw files
+1. Organize raw files:
+        ORGANIZE_DATA.py creates split_00/ … split_19/ sub‑folders with equal numbers of text‑like files. This balances I/O when preprocessing in parallel.
 
-ORGANIZE_DATA.py creates split_00/ … split_19/ sub‑folders with equal numbers of text‑like files. This balances I/O when preprocessing in parallel.
+            $ python ORGANIZE_DATA.py \
+                --src_dir ./raw_text \
+                --dst_root ./splits --num_dirs 20
 
-$ python ORGANIZE_DATA.py \
-    --src_dir ./raw_text \
-    --dst_root ./splits --num_dirs 20
+2. Convert to Hugging Face dataset:
+        DATA-HF.py crawls each folder, extracts all string values from:
 
-2. Convert to Hugging Face dataset
-
-DATA-HF.py crawls each folder, extracts all string values from:
-
-Plain‑text *.txt
-
-Structured *.json (recursively traverses dictionaries & lists)
-
-YAML *.yml / *.yaml (if PyYAML available)
-
-and emits a Dataset with a single text column saved via dataset.save_to_disk() so it can be streamed without full RAM load.
-
-$ python DATA-HF.py \
-    --data_folder ./splits \
-    --save_dir hf_datasets/my_corpus
-
+        Plain‑text *.txt
+   
+        Structured *.json (recursively traverses dictionaries & lists)
+   
+        YAML *.yml / *.yaml (if PyYAML available)
+   
+        and emits a Dataset with a single text column saved via dataset.save_to_disk() so it can be streamed without full RAM load.
+   
+        $ python DATA-HF.py \
+            --data_folder ./splits \
+            --save_dir hf_datasets/my_corpus
 The resulting Arrow shards can be consumed locally; no internet API calls are required.
 
-Model Acquisition
 
-To keep training fully offline we pre‑download both the configuration and weight shards using MODEL_DOWNLOAD.py.
-
-$ export HF_HOME=$PWD/.cache/huggingface
-$ python MODEL_DOWNLOAD.py \
-    --model-name meta-llama/Llama-3.2-3B-Instruct
-
-Internally the script loads the weights on a torch.device("meta") so nothing is actually allocated in GPU RAM during the download.
+Model Acquisition:
+        To keep training fully offline we pre‑download both the configuration and weight shards using MODEL_DOWNLOAD.py.
+        
+        $ export HF_HOME=$PWD/.cache/huggingface
+        $ python MODEL_DOWNLOAD.py \
+            --model-name meta-llama/Llama-3.2-3B-Instruct
+        
+        Internally the script loads the weights on a torch.device("meta") so nothing is actually allocated in GPU RAM during the download.
 
 Distributed Fine‑Tuning with fsdp1.py
 
 fsdp1.py is a self‑contained training script engineered for clarity—they remove external logging frameworks and rely solely on torchrun for process spawning and PyTorch native APIs. Below is a detailed tour of its architecture.
 
-Launch Anatomy
+Launch Anatomy:
+        torchrun \
+          --standalone                      # or provide --nnodes / --node_rank / --rdzv_backend etc.
+          --nproc_per_node 4                # GPUs per node
+          fsdp1.py                          # ← main script
+          -e  llama3-math-instruct          # experiment name (sub‑folder under save‑dir)
+          -d  hf_datasets/my_corpus         # dataset name **or** path produced by DATA‑HF.py
+          -m  meta-llama/Llama-3.2-3B-Instruct
+          --save-dir outputs                # root for checkpoints/logs
+          --batch-size 2
+          --seq-length 1024
+          --num-epochs 3
+          --lr 2e-5
+          --cpu-offload on                  # offload param shards to CPU between steps
 
-torchrun \
-  --standalone                      # or provide --nnodes / --node_rank / --rdzv_backend etc.
-  --nproc_per_node 4                # GPUs per node
-  fsdp1.py                          # ← main script
-  -e  llama3-math-instruct          # experiment name (sub‑folder under save‑dir)
-  -d  hf_datasets/my_corpus         # dataset name **or** path produced by DATA‑HF.py
-  -m  meta-llama/Llama-3.2-3B-Instruct
-  --save-dir outputs                # root for checkpoints/logs
-  --batch-size 2
-  --seq-length 1024
-  --num-epochs 3
-  --lr 2e-5
-  --cpu-offload on                  # offload param shards to CPU between steps
+Argument Reference:
+        torchrun == fsdp deafult run command to initialize fsdp
+        --nproc_per_node "number of gpus you want to use(examppe is --nproc_per_node 4)"
+        --experiment-name "This is where you will name your training run(it will save under this name)"   #Folder name under save-dir used for checkpoints
+        --dataset-name "either a .arrow file path or hf dataset"    #Either a local path from DATA‑HF or a public HF dataset id (remote)(.arrow)
+        --model-name "hf model name even with sharded checkpoints(original hf model)"    #Any AutoModelForCausalLM‑compatible repo; weights must exist in $HF_HOME
+        --save-dir ../outputs    #Root output directory (will be created)
+        --seed 0    #Global RNG seed (torch / cuda)
+        --num-epochs 6    #Full epochs
+        --lr 3e-5    #AdamW base learning rate
+        -b, --batch-size 1    #Per‑process batch size
+        --log-freq 100    #Steps between progress logs
+        --ckpt-freq 15    #Steps between sharded checkpoint saves
+        --seq-length 1024    #Context length after tokenization (overrides tokenizer max ≤ model limit)
+        --cpu-offload on    #When on param shards are offloaded to host RAM after optimizer update
 
-Argument Reference
 
-Flag
-
-Default
-
-Description
-
--e, --experiment-name
-
-required
-
-Folder name under save-dir used for checkpoints
-
--d, --dataset-name
-
-required
-
-Either a local path from DATA‑HF or a public HF dataset id (remote)
-
--m, --model-name
-
-required
-
-Any AutoModelForCausalLM‑compatible repo; weights must exist in $HF_HOME
-
---save-dir
-
-../outputs
-
-Root output directory (will be created)
-
---seed
-
- 0
-
-Global RNG seed (torch / cuda)
-
---num-epochs
-
-6
-
-Full‑dataset epochs
-
---lr
-
- 3e-5
-
-AdamW base learning rate
-
--b, --batch-size
-
- 1
-
-Per‑process batch size
-
---log-freq
-
- 100
-
-Steps between progress logs
-
---ckpt-freq
-
- 15
-
-Steps between sharded checkpoint saves
-
---seq-length
-
- 1024
-
-Context length after tokenization (overrides tokenizer max ≤ model limit)
-
---cpu-offload
-
- on
-
-When on param shards are offloaded to host RAM after optimizer update
 
 Internal Flow
 
