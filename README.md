@@ -5,20 +5,20 @@ FSDP Llama Fine‑Tuning Pipeline
 This repository contains a fully‑offline pipeline for preparing text data, downloading a base Llama model, and fine‑tuning it with PyTorch 2 Fully Sharded Data Parallel (FSDP) using a single command. The main entry‑point is fsdp1.py, which implements a ZeRO‑3–equivalent training loop with sharded checkpoints, automatic resumption, gradient checkpointing and detailed memory/timing metrics. 
 
 Table of Contents:
-    1. Project Overview
-    2. Repository Layout
-    3. Quick Start
-    4. Prerequisites & Installation
-    5. Data Preparation
-    6. Model Acquisition
-    7. Distributed Fine‑Tuning with fsdp1.py
-    8. Checkpoint Format & Resumption
-    9. Monitoring & Logging
-    10. Tips & Troubleshooting
-    11. Frequently Asked Questions
-    12. Contributing
-    13. License
-    14. Acknowledgments
+        1. Project Overview
+        2. Repository Layout
+        3. Quick Start
+        4. Prerequisites & Installation
+        5. Data Preparation
+        6. Model Acquisition
+        7. Distributed Fine‑Tuning with fsdp1.py
+        8. Checkpoint Format & Resumption
+        9. Monitoring & Logging
+        10. Tips & Troubleshooting
+        11. Frequently Asked Questions
+        12. Contributing
+        13. License
+        14. Acknowledgments
 
 Project Overview
 Large‑language‑model (LLM) training is memory‑intensive. Fully Sharded Data Parallel (FSDP) breaks model parameters, gradients and optimizer states into non‑overlapping shards that are distributed across GPUs, reducing the per‑GPU memory footprint to roughly 1 ⁄ N of ZeRO‑1 and enabling full‑precision fine‑tuning on commodity hardware. 
