@@ -139,28 +139,27 @@ Internal Flow:
     FSDP requires a DDP‑compatible process group. Using torchrun this is created automatically.
 
     2. Model Construction:
+    
         Rank 0 loads full weights on CPU so the exact parameter count is printed—every other rank spins up an empty meta model and populates weights during FSDP wrapping.
         LlamaRMSNorm & LlamaRotaryEmbedding miss reset_parameters(), so dummy lambdas are monkey‑patched to satisfy FSDP’s param‑init API.
 
-FSDP Wrapping
+    3. FSDP Wrapping:
 
-wrap_policy = partial(transformer_auto_wrap_policy,
-                      transformer_layer_cls={LlamaDecoderLayer, Embedding})
-model = FullyShardedDataParallel(
-    model,
-    device_id=local_rank,
-    param_init_fn=lambda m: m.to_empty(device=device, recurse=False),
-    sync_module_states=True,
-    auto_wrap_policy=wrap_policy,
-    sharding_strategy=ShardingStrategy.FULL_SHARD,  # ZeRO‑3 equivalent
-    cpu_offload=CPUOffload(offload_params=args.cpu_offload == "on")
-)
-
-param_init_fn relocates freshly initialised tensors to an empty tensor on the target GPU, so no GPU OOM occurs before sharding.
-
-sync_module_states=True ensures that the initial weights broadcast from rank 0.
-
-auto_wrap_policy recursively wraps LlamaDecoderLayer & embedding tables only, minimising communication overhead.
+            wrap_policy = partial(transformer_auto_wrap_policy,
+                                  transformer_layer_cls={LlamaDecoderLayer, Embedding})
+            model = FullyShardedDataParallel(
+                model,
+                device_id=local_rank,
+                param_init_fn=lambda m: m.to_empty(device=device, recurse=False),
+                sync_module_states=True,
+                auto_wrap_policy=wrap_policy,
+                sharding_strategy=ShardingStrategy.FULL_SHARD,  # ZeRO‑3 equivalent
+                cpu_offload=CPUOffload(offload_params=args.cpu_offload == "on")
+            )
+            
+        param_init_fn relocates freshly initialised tensors to an empty tensor on the target GPU, so no GPU OOM occurs before sharding.
+        sync_module_states=True ensures that the initial weights broadcast from rank 0.        
+        auto_wrap_policy recursively wraps LlamaDecoderLayer & embedding tables only, minimising communication overhead.
 
 Gradient Checkpointing — Memory vs Compute trade‑off
 
