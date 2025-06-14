@@ -38,6 +38,7 @@ Repository Layout:
 After each ckpt_freq steps a sharded checkpoint is written to outputs dir. Restarting the same torchrun command will resume automatically.
 
 Prerequisites & Installation:
+
         Hardware:
                 GPUs ≥ 1 with CUDA 11.8+ (BF16 recommended, FP16 also works, FP32 also works)
                 CPU RAM ≥ 32 GB (for data loading & tokenizer caches)
@@ -52,29 +53,29 @@ Prerequisites & Installation:
                 datasets = latest
                 tqdm, pyyaml, argparse
 
-Data Preparation
+Data Preparation:
 
-1. Organize raw files:
-        ORGANIZE_DATA.py creates split_00/ … split_19/ sub‑folders with equal numbers of text‑like files. This balances I/O when preprocessing in parallel.
-
-            $ python ORGANIZE_DATA.py \
-                --src_dir ./raw_text \
-                --dst_root ./splits --num_dirs 20
-
-2. Convert to Hugging Face dataset:
-        DATA-HF.py crawls each folder, extracts all string values from:
-
-        Plain‑text *.txt
-   
-        Structured *.json (recursively traverses dictionaries & lists)
-   
-        YAML *.yml / *.yaml (if PyYAML available)
-   
-        and emits a Dataset with a single text column saved via dataset.save_to_disk() so it can be streamed without full RAM load.
-   
-        $ python DATA-HF.py \
-            --data_folder ./splits \
-            --save_dir hf_datasets/my_corpus
+    1. Organize raw files:
+            ORGANIZE_DATA.py creates split_00/ … split_19/ sub‑folders with equal numbers of text‑like files. This balances I/O when preprocessing in parallel.
+    
+                $ python ORGANIZE_DATA.py \
+                    --src_dir ./raw_text \
+                    --dst_root ./splits --num_dirs 20
+    
+    2. Convert to Hugging Face dataset:
+            DATA-HF.py crawls each folder, extracts all string values from:
+    
+            Plain‑text *.txt
+       
+            Structured *.json (recursively traverses dictionaries & lists)
+       
+            YAML *.yml / *.yaml (if PyYAML available)
+       
+            and emits a Dataset with a single text column saved via dataset.save_to_disk() so it can be streamed without full RAM load.
+       
+            $ python DATA-HF.py \
+                --data_folder ./splits \
+                --save_dir hf_datasets/my_corpus
 The resulting Arrow shards can be consumed locally; no internet API calls are required.
 
 
