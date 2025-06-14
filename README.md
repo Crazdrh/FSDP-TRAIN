@@ -80,6 +80,7 @@ The resulting Arrow shards can be consumed locally; no internet API calls are r
 
 
 Model Acquisition:
+        
         To keep training fully offline we pre‑download both the configuration and weight shards using MODEL_DOWNLOAD.py.
         
         $ export HF_HOME=$PWD/.cache/huggingface
@@ -88,40 +89,42 @@ Model Acquisition:
         
         Internally the script loads the weights on a torch.device("meta") so nothing is actually allocated in GPU RAM during the download.
 
-Distributed Fine‑Tuning with fsdp1.py
+Distributed Fine‑Tuning with fsdp1.py:
 
-fsdp1.py is a self‑contained training script engineered for clarity—they remove external logging frameworks and rely solely on torchrun for process spawning and PyTorch native APIs. Below is a detailed tour of its architecture.
+    fsdp1.py is a self‑contained training script engineered for clarity—they remove external logging frameworks and rely solely on torchrun for process spawning and PyTorch native APIs. Below is a detailed tour of its architecture.
 
-Launch Anatomy:
-        torchrun \
-          --standalone                      # or provide --nnodes / --node_rank / --rdzv_backend etc.
-          --nproc_per_node 4                # GPUs per node
-          fsdp1.py                          # ← main script
-          -e  llama3-math-instruct          # experiment name (sub‑folder under save‑dir)
-          -d  hf_datasets/my_corpus         # dataset name **or** path produced by DATA‑HF.py
-          -m  meta-llama/Llama-3.2-3B-Instruct
-          --save-dir outputs                # root for checkpoints/logs
-          --batch-size 2
-          --seq-length 1024
-          --num-epochs 3
-          --lr 2e-5
-          --cpu-offload on                  # offload param shards to CPU between steps
-
-Argument Reference:
-        torchrun == fsdp deafult run command to initialize fsdp
-        --nproc_per_node "number of gpus you want to use(examppe is --nproc_per_node 4)"
-        --experiment-name "This is where you will name your training run(it will save under this name)"   #Folder name under save-dir used for checkpoints
-        --dataset-name "either a .arrow file path or hf dataset"    #Either a local path from DATA‑HF or a public HF dataset id (remote)(.arrow)
-        --model-name "hf model name even with sharded checkpoints(original hf model)"    #Any AutoModelForCausalLM‑compatible repo; weights must exist in $HF_HOME
-        --save-dir ../outputs    #Root output directory (will be created)
-        --seed 0    #Global RNG seed (torch / cuda)
-        --num-epochs 6    #Full epochs
-        --lr 3e-5    #AdamW base learning rate
-        -b, --batch-size 1    #Per‑process batch size
-        --log-freq 100    #Steps between progress logs
-        --ckpt-freq 15    #Steps between sharded checkpoint saves
-        --seq-length 1024    #Context length after tokenization (overrides tokenizer max ≤ model limit)
-        --cpu-offload on    #When on param shards are offloaded to host RAM after optimizer update
+    Launch Anatomy:
+            
+            torchrun \
+              --standalone                      # or provide --nnodes / --node_rank / --rdzv_backend etc.
+              --nproc_per_node 4                # GPUs per node
+              fsdp1.py                          # ← main script
+              -e  llama3-math-instruct          # experiment name (sub‑folder under save‑dir)
+              -d  hf_datasets/my_corpus         # dataset name **or** path produced by DATA‑HF.py
+              -m  meta-llama/Llama-3.2-3B-Instruct
+              --save-dir outputs                # root for checkpoints/logs
+              --batch-size 2
+              --seq-length 1024
+              --num-epochs 3
+              --lr 2e-5
+              --cpu-offload on                  # offload param shards to CPU between steps
+    
+    Argument Reference:
+            
+            torchrun == fsdp deafult run command to initialize fsdp
+            --nproc_per_node "number of gpus you want to use(examppe is --nproc_per_node 4)"
+            --experiment-name "This is where you will name your training run(it will save under this name)"   #Folder name under save-dir used for checkpoints
+            --dataset-name "either a .arrow file path or hf dataset"    #Either a local path from DATA‑HF or a public HF dataset id (remote)(.arrow)
+            --model-name "hf model name even with sharded checkpoints(original hf model)"    #Any AutoModelForCausalLM‑compatible repo; weights must exist in $HF_HOME
+            --save-dir ../outputs    #Root output directory (will be created)
+            --seed 0    #Global RNG seed (torch / cuda)
+            --num-epochs 6    #Full epochs
+            --lr 3e-5    #AdamW base learning rate
+            -b, --batch-size 1    #Per‑process batch size
+            --log-freq 100    #Steps between progress logs
+            --ckpt-freq 15    #Steps between sharded checkpoint saves
+            --seq-length 1024    #Context length after tokenization (overrides tokenizer max ≤ model limit)
+            --cpu-offload on    #When on param shards are offloaded to host RAM after optimizer update
 
 
 
