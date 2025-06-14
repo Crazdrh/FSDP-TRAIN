@@ -128,15 +128,15 @@ Distributed Fine‑Tuning with fsdp1.py:
 
 
 
-Internal Flow
+Internal Flow:
 
-Process Group Initialisation
-
-dist.init_process_group()
-rank = dist.get_rank(); local_rank = rank % torch.cuda.device_count()
-torch.cuda.set_device(local_rank)
-
-FSDP requires a DDP‑compatible process group. Using torchrun this is created automatically.
+    Process Group Initialisation:
+    
+        dist.init_process_group()
+        rank = dist.get_rank(); local_rank = rank % torch.cuda.device_count()
+        torch.cuda.set_device(local_rank)
+    
+    FSDP requires a DDP‑compatible process group. Using torchrun this is created automatically.
 
 Model Construction
 
