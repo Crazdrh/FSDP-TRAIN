@@ -1,6 +1,4 @@
 # FSDP-TRAIN
-
-Run Command:  torchrun --nproc_per_node=4 fsdp1.py  --experiment-name Chnage to your   --dataset-name chnage to your hf dataset    --model-name hf model name     --save-dir where saved    --cpu-offload on
 FSDP Llama Fine‑Tuning Pipeline
 This repository contains a fully‑offline pipeline for preparing text data, downloading a base Llama model, and fine‑tuning it with PyTorch 2 Fully Sharded Data Parallel (FSDP) using a single command. The main entry‑point is fsdp1.py, which implements a ZeRO‑3–equivalent training loop with sharded checkpoints, automatic resumption, gradient checkpointing and detailed memory/timing metrics. 
 
