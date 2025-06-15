@@ -84,7 +84,7 @@ def main():
             model = AutoModelForCausalLM.from_pretrained(
                 args.model_name,
                 torch_dtype=dtype,
-                attn_implementation="eager",
+                attn_implementation="flash_attention_2",
                 use_cache=False,
             )
     else:
@@ -92,7 +92,7 @@ def main():
             model = AutoModelForCausalLM.from_config(
                 config,
                 torch_dtype=dtype,
-                attn_implementation="eager",
+                attn_implementation="flash_attention_2",
             )
     LOGGER.info(f"{sum(p.numel() for p in model.parameters())} model parameters")
 
